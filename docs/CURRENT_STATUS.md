@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-27
-> **Current version**: pre-v1.0 (scaffolding complete, no logic yet)
+> **Current version**: pre-v1.0 (scaffolding partial — Step 1 in progress)
 > **Active branch**: `dev`
 
 ---

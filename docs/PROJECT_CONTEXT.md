@@ -55,10 +55,11 @@ The user needs a program that:
 ## Workspace
 
 - Path: `/Users/mario/repos/001-sandbox/files_diff`
-- State: documentation only (`docs/`), no code yet
+- State: Step 1 partial. Files committed on `dev`: `go.mod`, `go.sum`, `main.go`, `cmd/root.go`
+- Next commit: `Dockerfile` + `Makefile` → Step 1 complete
 
 ## Next Steps
 
-1. Complete documentation structure (`CURRENT_STATUS.md`, `docs/working/` convention)
-2. Scaffolding: `go mod init`, directory structure, `Dockerfile`, `Makefile`
-3. Proceed TDD package by package per implementation order in `IMPLEMENTATION_PLAN.md`
+1. Create `Dockerfile` (golang:1.24-alpine, with `make` and `git`) — Step 1 pending
+2. Create `Makefile` (targets: build, test, lint, cross-compile) — Step 1 pending
+3. Commit → Step 1 ✅ complete → Step 2: TDD `internal/comparator` (file comparison)
