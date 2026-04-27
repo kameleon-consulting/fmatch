@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-27
-> **Current version**: pre-v1.0 (no code yet)
+> **Current version**: pre-v1.0 (scaffolding complete, no logic yet)
 > **Active branch**: `dev`
 
 ---
@@ -25,7 +25,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 | Step | Description | Status |
 |------|-------------|--------|
-| 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | ⬜ |
+| 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | 🟡 |
 | 2 | Package `internal/comparator` — File (TDD) | ⬜ |
 | 3 | Package `internal/output` (TDD) | ⬜ |
 | 4 | Package `cmd` — Cobra command + flags | ⬜ |
@@ -40,27 +40,33 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-- Defined and finalized the complete documentation structure for the project.
-- Aligned `PROJECT_CONTEXT.md`: translated to English, removed stale entries, added branching strategy and all closed decisions (including #6: no separate backlog).
-- Decision: no separate backlog/roadmap file. Task order in `IMPLEMENTATION_PLAN.md`, current state here.
+**Step 1 — Scaffolding (partial)**
+- `go.mod` with `require` block (Cobra v1.10.2, go-gitignore v0.0.0-20210923224102)
+- `go.sum` generated (10 lines)
+- `main.go` — minimal entry point delegating to `cmd.Execute()`
+- `cmd/root.go` — Cobra root command (Use, Short, Long, RunE stub — no flags per DEC-10)
+- `go build ./...` and `go vet ./...` pass with exit code 0
+- DEC-8, DEC-9, DEC-10 closed and documented in `PROJECT_CONTEXT.md`
+
+**Pending for Step 1 completion (next session):**
+- `Dockerfile` (golang:1.24-alpine)
+- `Makefile` (targets: build, test, lint, cross-compile)
 
 ---
 
 ## In Progress
 
-_Nothing in progress. Ready to start Step 1: Scaffolding._
+**Step 1 — Scaffolding** (completing next session: Dockerfile + Makefile)
 
 ---
 
 ## Next Step
 
-**Step 1 — Scaffolding**
+**Step 1 — Finalize Scaffolding** (resume here next session)
 
-1. `go mod init github.com/<user>/fmatch`
-2. Create directory structure: `cmd/`, `internal/comparator/`, `internal/output/`, `internal/ignore/`
-3. Create `Dockerfile` (golang:1.24-alpine)
-4. Create `Makefile` with targets: `build`, `test`, `lint`, `cross-compile`
-5. Create `main.go` (minimal entry point)
+1. Create `Dockerfile` (golang:1.24-alpine, with `make` and `git`)
+2. Create `Makefile` with targets: `build`, `test`, `lint`, `cross-compile`
+3. Commit Step 1 complete → then move to Step 2
 
 ---
 
