@@ -42,6 +42,7 @@ The user needs a program that:
 | 4 | Default directory depth | ✅ **-1 (unlimited)** |
 | 5 | Symlink handling | ✅ **Follow by default + `--no-follow-symlinks` to disable** |
 | 6 | Task tracking / backlog | ✅ **No separate backlog file.** Implementation order lives in `IMPLEMENTATION_PLAN.md`. Current state (step in progress, next step) lives in `CURRENT_STATUS.md`. Public task tracking via GitHub Issues when the repo goes live. |
+| 7 | Versioning strategy | ✅ **No tags during development.** First public release = `v1.0.0` on merge to `main` after Step 9 (all v1.0 steps complete). `v2.0.0` = Web UI (Step 10). SemVer + Git tags, managed via GoReleaser. |
 
 ## Branching Strategy
 
