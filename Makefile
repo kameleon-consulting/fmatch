@@ -15,7 +15,7 @@ LDFLAGS     := -ldflags "-X $(MODULE)/cmd.Version=$(VERSION) -s -w"
 # Cross-compile targets
 PLATFORMS   := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
-.PHONY: all build test lint clean cross-compile help
+.PHONY: all build test lint clean cross-compile snapshot release help
 
 ## all: build the binary (default)
 all: build
@@ -58,6 +58,25 @@ clean:
 	@rm -f $(BINARY_NAME)
 	@rm -rf $(BUILD_DIR)
 	@echo "    Done."
+
+## snapshot: build a snapshot release locally without publishing (requires goreleaser)
+snapshot:
+	@echo "==> Building snapshot release..."
+	@command -v goreleaser >/dev/null 2>&1 || { \
+		echo "goreleaser not found. Install: https://goreleaser.com/install/"; \
+		exit 1; \
+	}
+	goreleaser build --snapshot --clean
+
+## release: build and publish release to GitHub (requires GITHUB_TOKEN env var)
+release:
+	@echo "==> Publishing release $(VERSION)..."
+	@command -v goreleaser >/dev/null 2>&1 || { \
+		echo "goreleaser not found. Install: https://goreleaser.com/install/"; \
+		exit 1; \
+	}
+	@[ -n "$(GITHUB_TOKEN)" ] || { echo "Error: GITHUB_TOKEN is not set"; exit 1; }
+	goreleaser release --clean
 
 ## help: show this help message
 help:
