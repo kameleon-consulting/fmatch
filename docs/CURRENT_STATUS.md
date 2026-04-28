@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 1 complete — Step 2 starting)
+> **Current version**: pre-v1.0 (Step 2 complete — Step 3 starting)
 > **Active branch**: `dev`
 
 ---
@@ -26,7 +26,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | Step | Description | Status |
 |------|-------------|--------|
 | 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | ✅ |
-| 2 | Package `internal/comparator` — File (TDD) | ⬜ |
+| 2 | Package `internal/comparator` — File (TDD) | ✅ |
 | 3 | Package `internal/output` (TDD) | ⬜ |
 | 4 | Package `cmd` — Cobra command + flags | ⬜ |
 | 5 | Integration: `main.go` wiring | ⬜ |
@@ -40,30 +40,27 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 1 — Scaffolding ✅**
-- `go.mod` + `go.sum` (Cobra v1.10.2, go-gitignore)
-- `main.go` — minimal entry point delegating to `cmd.Execute()`
-- `cmd/root.go` — Cobra root command stub, no flags (DEC-10)
-- `Dockerfile` (golang:1.24-alpine + gcc/musl-dev for CGO/race detector)
-- `Makefile` (targets: build, test, lint, cross-compile)
-- Verified via Docker: `make build` ✅ — `make test -race` ✅
+**Step 2 — Package `internal/comparator` — File ✅**
+- `internal/comparator/file.go`: `CompareFiles()`, early exit on size mismatch, 64KB chunks, exact `DiffOffset`
+- `internal/comparator/file_test.go`: 10 tests (identical small/large, diff size, diff content + offset, empty, binary, error)
+- All tests pass with `-race` detector
 
 ---
 
 ## In Progress
 
-**Step 2 — Package `internal/comparator` — File (TDD)**
+**Step 3 — Package `internal/output` (TDD)**
 
 ---
 
 ## Next Step
 
-**Step 2 — TDD `internal/comparator` (file comparison)**
+**Step 3 — TDD `internal/output` (output formatting)**
 
-1. Write `internal/comparator/file_test.go` (tests first — TDD)
-2. Write `internal/comparator/file.go` (implementation)
+1. Write `internal/output/formatter_test.go` (tests first — TDD)
+2. Write `internal/output/formatter.go` (implementation)
 3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-4. Commit → move to Step 3
+4. Commit → move to Step 4
 
 ---
 
