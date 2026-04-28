@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 4 complete — Step 5 starting)
+> **Current version**: pre-v1.0 (Step 5 complete — Step 6 starting)
 > **Active branch**: `dev`
 
 ---
@@ -29,7 +29,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 2 | Package `internal/comparator` — File (TDD) | ✅ |
 | 3 | Package `internal/output` (TDD) | ✅ |
 | 4 | Package `cmd` — Cobra command + flags | ✅ |
-| 5 | Integration: `main.go` wiring | ⬜ |
+| 5 | Integration: `main.go` wiring | ✅ |
 | 6 | Package `internal/ignore` (TDD) | ⬜ |
 | 7 | Package `internal/comparator` — Directory (TDD) | ⬜ |
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ⬜ |
@@ -40,28 +40,29 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 4 — Package `cmd` ✅**
-- `cmd/root.go`: `NewRootCmd()` factory, `Version` var, `cobra.ExactArgs(2)`, tutti i flag (`-q`, `-v/-vv`, `-d`, `-i`, `--ignore-file`, `--no-ignore`, `--no-follow-symlinks`, `--no-color`)
-- `cmd/root_test.go`: defaults flag, ExactArgs validation, Version check
-- All tests pass with `-race` detector
+**Step 5 — Integration `RunE` ✅**
+- `ExitError` type (exported): porta exit code, testabile senza `os.Exit`
+- `runE`: flag reading, stat, type mismatch, `CompareFiles`, `Format`, exit 0/1/2
+- `resolveVerbosity`: mappa `-q`/`-v`/`-vv` → `output.Verbosity`
+- `Execute()`: ispeziona `ExitError` per `os.Exit(Code)` corretto
+- 5 test integrazione: identical, different/exit1, not-found/exit2, type-mismatch/exit2, quiet
 
 ---
 
 ## In Progress
 
-**Step 5 — Integration: `main.go` wiring**
+**Step 6 — Package `internal/ignore` (TDD)**
 
 ---
 
 ## Next Step
 
-**Step 5 — Integration `main.go` wiring**
+**Step 6 — TDD `internal/ignore` (pattern matching)**
 
-1. Wire flag values from `cmd/root.go` to `comparator.CompareFiles()` and `output.Format()`
-2. Handle exit codes (0/1/2) correctly
+1. Write `internal/ignore/ignore_test.go` (tests first — TDD)
+2. Write `internal/ignore/ignore.go` (wraps go-gitignore)
 3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-4. Manual smoke test: `fmatch <file_a> <file_b>`
-5. Commit → move to Step 6
+4. Commit → move to Step 7
 
 ---
 
