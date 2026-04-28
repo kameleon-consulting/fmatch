@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 8 complete — Step 9 starting)
+> **Current version**: v0.1.0 (Steps 1-9 completi — v1.0 released)
 > **Active branch**: `dev`
 
 ---
@@ -33,43 +33,37 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 6 | Package `internal/ignore` (TDD) | ✅ |
 | 7 | Package `internal/comparator` — Directory (TDD) | ✅ |
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ✅ |
-| 9 | Release: `.goreleaser.yaml`, cross-platform build | ⬜ |
+| 9 | Release: `.goreleaser.yaml`, cross-platform build | ✅ |
 | 10 | v2.0 — Embedded Web UI | ⬜ |
 
 ---
 
 ## Last Completed
 
-**Step 8 — Polish ✅**
-- `ignore.LoadFileAndPatterns`: combina file + pattern `-i` in un unico Matcher (+ 3 test)
-- `output.FormatDir`: formatta `DirResult` per tutti i livelli verbosità (+ 4 test)
-- `cmd/root.go`: `loadMatcher` helper, directory stub → `CompareDir` + `FormatDir`
-- `.fmatchignore.example`: template con pattern comuni
-- `README.md`: installazione, esempi, flag, exit codes
+**Step 9 — Release pipeline ✅**
+- `.goreleaser.yaml`: 5 piattaforme (linux/darwin/windows × amd64/arm64 meno windows/arm64)
+- `Makefile`: target `snapshot` e `release` con goreleaser
+- Cross-compile verificato: tutti i binari compilano (`make cross-compile`)
+- Merge `dev` → `main`, tag `v0.1.0`
 
 ---
 
 ## In Progress
 
-**Step 9 — Release: `.goreleaser.yaml`, cross-platform build**
+*Nessun task attivo — v0.1.0 rilasciata.*
 
 ---
 
 ## Next Step
 
-**Step 9 — Release pipeline**
-
-1. Creare `.goreleaser.yaml` (cross-platform: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64)
-2. Configurare ldflags per iniettare `Version` al build time
-3. Testare build locale con `goreleaser build --snapshot --clean`
-4. Aggiornare `Makefile` con target `release`
-5. Commit → tag `v0.1.0` → `git push`
+**Step 10 — v2.0 Embedded Web UI** (pianificato, non avviato)
 
 ---
 
 ## Open Points
 
-_None. All decisions closed. See `PROJECT_CONTEXT.md` — Closed Decisions._
+- `--no-follow-symlinks` flag dichiarato ma non implementato nella logica di walk (TODO v0.2.0)
+- Step 10 (Web UI) richiede decisioni architetturali separate
 
 ---
 
