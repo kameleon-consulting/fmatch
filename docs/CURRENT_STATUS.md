@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 3 complete — Step 4 starting)
+> **Current version**: pre-v1.0 (Step 4 complete — Step 5 starting)
 > **Active branch**: `dev`
 
 ---
@@ -28,7 +28,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | ✅ |
 | 2 | Package `internal/comparator` — File (TDD) | ✅ |
 | 3 | Package `internal/output` (TDD) | ✅ |
-| 4 | Package `cmd` — Cobra command + flags | ⬜ |
+| 4 | Package `cmd` — Cobra command + flags | ✅ |
 | 5 | Integration: `main.go` wiring | ⬜ |
 | 6 | Package `internal/ignore` (TDD) | ⬜ |
 | 7 | Package `internal/comparator` — Directory (TDD) | ⬜ |
@@ -40,25 +40,28 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 3 — Package `internal/output` ✅**
-- `internal/output/formatter.go`: `Format()` — 4 verbosity levels, ANSI colors, SHA-256 in VV, DiffOffset in VV
-- `internal/output/formatter_test.go`: 10 tests (quiet, normal, verbose, VV, color/no-color), all pass with `-race`
+**Step 4 — Package `cmd` ✅**
+- `cmd/root.go`: `NewRootCmd()` factory, `Version` var, `cobra.ExactArgs(2)`, tutti i flag (`-q`, `-v/-vv`, `-d`, `-i`, `--ignore-file`, `--no-ignore`, `--no-follow-symlinks`, `--no-color`)
+- `cmd/root_test.go`: defaults flag, ExactArgs validation, Version check
+- All tests pass with `-race` detector
 
 ---
 
 ## In Progress
 
-**Step 4 — Package `cmd` — Cobra command + flags**
+**Step 5 — Integration: `main.go` wiring**
 
 ---
 
 ## Next Step
 
-**Step 4 — `cmd` — Cobra flags**
+**Step 5 — Integration `main.go` wiring**
 
-1. Add all flags to `cmd/root.go` (defined in Step 4: `-q`, `-v`, `-d`, `-i`, `--ignore-file`, `--no-ignore`, `--no-follow-symlinks`, `--no-color`)
-2. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-3. Commit → move to Step 5
+1. Wire flag values from `cmd/root.go` to `comparator.CompareFiles()` and `output.Format()`
+2. Handle exit codes (0/1/2) correctly
+3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
+4. Manual smoke test: `fmatch <file_a> <file_b>`
+5. Commit → move to Step 6
 
 ---
 
