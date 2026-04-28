@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 2 complete — Step 3 starting)
+> **Current version**: pre-v1.0 (Step 3 complete — Step 4 starting)
 > **Active branch**: `dev`
 
 ---
@@ -27,7 +27,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 |------|-------------|--------|
 | 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | ✅ |
 | 2 | Package `internal/comparator` — File (TDD) | ✅ |
-| 3 | Package `internal/output` (TDD) | ⬜ |
+| 3 | Package `internal/output` (TDD) | ✅ |
 | 4 | Package `cmd` — Cobra command + flags | ⬜ |
 | 5 | Integration: `main.go` wiring | ⬜ |
 | 6 | Package `internal/ignore` (TDD) | ⬜ |
@@ -40,27 +40,25 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 2 — Package `internal/comparator` — File ✅**
-- `internal/comparator/file.go`: `CompareFiles()`, early exit on size mismatch, 64KB chunks, exact `DiffOffset`
-- `internal/comparator/file_test.go`: 10 tests (identical small/large, diff size, diff content + offset, empty, binary, error)
-- All tests pass with `-race` detector
+**Step 3 — Package `internal/output` ✅**
+- `internal/output/formatter.go`: `Format()` — 4 verbosity levels, ANSI colors, SHA-256 in VV, DiffOffset in VV
+- `internal/output/formatter_test.go`: 10 tests (quiet, normal, verbose, VV, color/no-color), all pass with `-race`
 
 ---
 
 ## In Progress
 
-**Step 3 — Package `internal/output` (TDD)**
+**Step 4 — Package `cmd` — Cobra command + flags**
 
 ---
 
 ## Next Step
 
-**Step 3 — TDD `internal/output` (output formatting)**
+**Step 4 — `cmd` — Cobra flags**
 
-1. Write `internal/output/formatter_test.go` (tests first — TDD)
-2. Write `internal/output/formatter.go` (implementation)
-3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-4. Commit → move to Step 4
+1. Add all flags to `cmd/root.go` (defined in Step 4: `-q`, `-v`, `-d`, `-i`, `--ignore-file`, `--no-ignore`, `--no-follow-symlinks`, `--no-color`)
+2. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
+3. Commit → move to Step 5
 
 ---
 
