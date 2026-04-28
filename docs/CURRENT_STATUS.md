@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 7 complete — Step 8 starting)
+> **Current version**: pre-v1.0 (Step 8 complete — Step 9 starting)
 > **Active branch**: `dev`
 
 ---
@@ -32,7 +32,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 5 | Integration: `main.go` wiring | ✅ |
 | 6 | Package `internal/ignore` (TDD) | ✅ |
 | 7 | Package `internal/comparator` — Directory (TDD) | ✅ |
-| 8 | Polish: colored output, `.fmatchignore.example`, README | ⬜ |
+| 8 | Polish: colored output, `.fmatchignore.example`, README | ✅ |
 | 9 | Release: `.goreleaser.yaml`, cross-platform build | ⬜ |
 | 10 | v2.0 — Embedded Web UI | ⬜ |
 
@@ -40,30 +40,30 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 7 — Package `internal/comparator` — Directory ✅**
-- `internal/comparator/dir.go`: `CompareDir()` + `DirOptions` (Matcher, Depth); `walkDir` ricorsivo con depth limit e ignore; set difference A/B; `DirResult` con contatori e liste ordinate
-- `internal/comparator/dir_test.go`: 9 test (dir vuote, file identici, solo-in-A/B, contenuto diverso, depth=0, ignore patterns, contatori, path non trovato)
-- All tests pass with `-race` detector
+**Step 8 — Polish ✅**
+- `ignore.LoadFileAndPatterns`: combina file + pattern `-i` in un unico Matcher (+ 3 test)
+- `output.FormatDir`: formatta `DirResult` per tutti i livelli verbosità (+ 4 test)
+- `cmd/root.go`: `loadMatcher` helper, directory stub → `CompareDir` + `FormatDir`
+- `.fmatchignore.example`: template con pattern comuni
+- `README.md`: installazione, esempi, flag, exit codes
 
 ---
 
 ## In Progress
 
-**Step 8 — Polish: wiring directory in runE, colored output, `.fmatchignore.example`, README**
+**Step 9 — Release: `.goreleaser.yaml`, cross-platform build**
 
 ---
 
 ## Next Step
 
-**Step 8 — Polish**
+**Step 9 — Release pipeline**
 
-1. Wire `CompareDir` in `cmd/root.go` `runE` (rimuovi stub "not yet implemented")
-2. Wire `ignore.LoadFile` + `ignore.LoadPatterns` in `runE`
-3. Aggiornare `output.Format` per `DirResult` (normal: summary count, verbose: file list)
-4. Creare `.fmatchignore.example`
-5. Scrivere `README.md`
-6. Run `make test` → all green
-7. Commit → Step 9
+1. Creare `.goreleaser.yaml` (cross-platform: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64)
+2. Configurare ldflags per iniettare `Version` al build time
+3. Testare build locale con `goreleaser build --snapshot --clean`
+4. Aggiornare `Makefile` con target `release`
+5. Commit → tag `v0.1.0` → `git push`
 
 ---
 
