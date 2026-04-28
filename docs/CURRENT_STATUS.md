@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 6 complete — Step 7 starting)
+> **Current version**: pre-v1.0 (Step 7 complete — Step 8 starting)
 > **Active branch**: `dev`
 
 ---
@@ -31,7 +31,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 4 | Package `cmd` — Cobra command + flags | ✅ |
 | 5 | Integration: `main.go` wiring | ✅ |
 | 6 | Package `internal/ignore` (TDD) | ✅ |
-| 7 | Package `internal/comparator` — Directory (TDD) | ⬜ |
+| 7 | Package `internal/comparator` — Directory (TDD) | ✅ |
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ⬜ |
 | 9 | Release: `.goreleaser.yaml`, cross-platform build | ⬜ |
 | 10 | v2.0 — Embedded Web UI | ⬜ |
@@ -40,29 +40,30 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 6 — Package `internal/ignore` ✅**
-- `go.mod`/`go.sum`: aggiunto `github.com/sabhiram/go-gitignore v0.0.0-20210923224102`
-- `internal/ignore/ignore.go`: `Matcher` — `LoadFile` (fallback su file mancante), `LoadPatterns`, `Match()`
-- `internal/ignore/ignore_test.go`: 8 test (pattern semplici, file mancante, commenti, righe vuote, negazione `!`, `**`, LoadPatterns, lista vuota)
+**Step 7 — Package `internal/comparator` — Directory ✅**
+- `internal/comparator/dir.go`: `CompareDir()` + `DirOptions` (Matcher, Depth); `walkDir` ricorsivo con depth limit e ignore; set difference A/B; `DirResult` con contatori e liste ordinate
+- `internal/comparator/dir_test.go`: 9 test (dir vuote, file identici, solo-in-A/B, contenuto diverso, depth=0, ignore patterns, contatori, path non trovato)
 - All tests pass with `-race` detector
 
 ---
 
 ## In Progress
 
-**Step 7 — Package `internal/comparator` — Directory (TDD)**
+**Step 8 — Polish: wiring directory in runE, colored output, `.fmatchignore.example`, README**
 
 ---
 
 ## Next Step
 
-**Step 7 — TDD `internal/comparator` — Directory**
+**Step 8 — Polish**
 
-1. Write `internal/comparator/dir_test.go` (tests first — TDD)
-2. Write `internal/comparator/dir.go` (recursive walk, ignore integration)
-3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-4. Wire directory support into `cmd/root.go` `runE`
-5. Commit → move to Step 8
+1. Wire `CompareDir` in `cmd/root.go` `runE` (rimuovi stub "not yet implemented")
+2. Wire `ignore.LoadFile` + `ignore.LoadPatterns` in `runE`
+3. Aggiornare `output.Format` per `DirResult` (normal: summary count, verbose: file list)
+4. Creare `.fmatchignore.example`
+5. Scrivere `README.md`
+6. Run `make test` → all green
+7. Commit → Step 9
 
 ---
 
