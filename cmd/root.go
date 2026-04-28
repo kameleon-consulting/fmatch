@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/mlabate/fmatch/internal/comparator"
+	"github.com/mlabate/fmatch/internal/ignore"
 	"github.com/mlabate/fmatch/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -96,9 +97,39 @@ func runE(cmd *cobra.Command, args []string) error {
 		return &ExitError{Code: 2, Msg: "fmatch: cannot compare file with directory"}
 	}
 
-	// Directory comparison — not yet implemented (Step 7).
+	// Directory comparison.
 	if infoA.IsDir() {
-		return &ExitError{Code: 2, Msg: "fmatch: directory comparison not yet implemented"}
+		matcher, err := loadMatcher(cmd)
+		if err != nil {
+			return &ExitError{Code: 2, Msg: fmt.Sprintf("fmatch: %v", err)}
+		}
+		depth, _ := cmd.Flags().GetInt("depth")
+
+		dirResult, err := comparator.CompareDir(pathA, pathB, comparator.DirOptions{
+			Matcher: matcher,
+			Depth:   depth,
+		})
+		if err != nil {
+			return &ExitError{Code: 2, Msg: fmt.Sprintf("fmatch: %v", err)}
+		}
+
+		dirOpts := output.Options{
+			Level:   verbosity,
+			NoColor: noColor,
+			PathA:   pathA,
+			PathB:   pathB,
+		}
+		out, err := output.FormatDir(dirResult, dirOpts)
+		if err != nil {
+			return &ExitError{Code: 2, Msg: fmt.Sprintf("fmatch: %v", err)}
+		}
+		if out != "" {
+			fmt.Fprintln(cmd.OutOrStdout(), out)
+		}
+		if !dirResult.Identical {
+			return &ExitError{Code: 1}
+		}
+		return nil
 	}
 
 	// File comparison.
@@ -160,5 +191,18 @@ func Execute() {
 		fmt.Fprintf(os.Stderr, "fmatch: %v\n", err)
 		os.Exit(2)
 	}
+}
+
+// loadMatcher builds an ignore.Matcher from the --ignore-file, --no-ignore and -i flags.
+// If --no-ignore is set, returns an empty Matcher (nothing ignored).
+// Otherwise combines the ignore file patterns with any -i inline patterns.
+func loadMatcher(cmd *cobra.Command) (*ignore.Matcher, error) {
+	noIgnore, _ := cmd.Flags().GetBool("no-ignore")
+	if noIgnore {
+		return ignore.LoadPatterns([]string{}), nil
+	}
+	ignoreFile, _ := cmd.Flags().GetString("ignore-file")
+	extra, _ := cmd.Flags().GetStringArray("ignore")
+	return ignore.LoadFileAndPatterns(ignoreFile, extra)
 }
 

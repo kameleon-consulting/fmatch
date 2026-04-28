@@ -1,0 +1,45 @@
+# .fmatchignore.example
+# Copy this file to .fmatchignore in your project root and customize as needed.
+# Syntax follows .gitignore rules: globs, **, negation (!), comments (#).
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+
+# ── Editor / IDE ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Logs and temp files ──────────────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+
+# ── Build output ─────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+*.o
+*.a
+
+# ── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# ── Go ───────────────────────────────────────────────────────────────────────
+vendor/
+
+# ── Archives ─────────────────────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.tar.bz2

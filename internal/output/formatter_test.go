@@ -188,3 +188,78 @@ func TestFormat_WithColor_ContainsANSI(t *testing.T) {
 		t.Errorf("expected ANSI codes with NoColor=false, got %q", got)
 	}
 }
+
+// ── FormatDir ────────────────────────────────────────────────────────────────
+
+func TestFormatDir_Quiet(t *testing.T) {
+	result := comparator.DirResult{Identical: true, TotalA: 3, TotalB: 3}
+	opts := output.Options{Level: output.VerbosityQuiet, NoColor: true}
+	got, err := output.FormatDir(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "" {
+		t.Errorf("quiet mode: expected empty string, got %q", got)
+	}
+}
+
+func TestFormatDir_Normal_Identical(t *testing.T) {
+	result := comparator.DirResult{Identical: true, TotalA: 3, TotalB: 3}
+	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
+	got, err := output.FormatDir(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "IDENTICAL" {
+		t.Errorf("expected %q, got %q", "IDENTICAL", got)
+	}
+}
+
+func TestFormatDir_Normal_Different_ContainsCounts(t *testing.T) {
+	result := comparator.DirResult{
+		Identical: false,
+		TotalA:    5, TotalB: 5,
+		Different: []string{"changed.txt"},
+		OnlyInA:   []string{"extra_a.txt"},
+		OnlyInB:   []string{},
+	}
+	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
+	got, err := output.FormatDir(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(got, "DIFFERENT") {
+		t.Errorf("expected DIFFERENT in output, got %q", got)
+	}
+	if !strings.Contains(got, "1 different") {
+		t.Errorf("expected count '1 different' in output, got %q", got)
+	}
+	if !strings.Contains(got, "1 only in A") {
+		t.Errorf("expected '1 only in A' in output, got %q", got)
+	}
+}
+
+func TestFormatDir_Verbose_Different_ContainsFileLists(t *testing.T) {
+	result := comparator.DirResult{
+		Identical: false,
+		TotalA:    3, TotalB: 3,
+		Different: []string{"changed.txt"},
+		OnlyInA:   []string{"only_a.txt"},
+		OnlyInB:   []string{"only_b.txt"},
+	}
+	opts := output.Options{
+		Level:   output.VerbosityVerbose,
+		NoColor: true,
+		PathA:   "/dir/A",
+		PathB:   "/dir/B",
+	}
+	got, err := output.FormatDir(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, expected := range []string{"changed.txt", "only_a.txt", "only_b.txt", "/dir/A", "/dir/B"} {
+		if !strings.Contains(got, expected) {
+			t.Errorf("expected %q in verbose output, got:\n%s", expected, got)
+		}
+	}
+}

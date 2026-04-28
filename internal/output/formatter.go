@@ -10,6 +10,7 @@ import (
 	"github.com/mlabate/fmatch/internal/comparator"
 )
 
+
 // Verbosity represents the output verbosity level.
 type Verbosity int
 
@@ -110,4 +111,67 @@ func fileHash(path string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// FormatDir returns the formatted output string for a directory comparison result.
+// Returns ("", nil) for VerbosityQuiet.
+func FormatDir(result comparator.DirResult, opts Options) (string, error) {
+	if opts.Level == VerbosityQuiet {
+		return "", nil
+	}
+
+	label, labelColor := "IDENTICAL", colorGreen
+	if !result.Identical {
+		label, labelColor = "DIFFERENT", colorRed
+	}
+
+	coloredLabel := label
+	if !opts.NoColor {
+		coloredLabel = labelColor + label + colorReset
+	}
+
+	switch opts.Level {
+	case VerbosityNormal:
+		var b strings.Builder
+		b.WriteString(coloredLabel)
+		if !result.Identical {
+			b.WriteString(fmt.Sprintf(
+				"\n  %d different · %d only in A · %d only in B",
+				len(result.Different), len(result.OnlyInA), len(result.OnlyInB),
+			))
+		}
+		return b.String(), nil
+
+	case VerbosityVerbose, VerbosityVV:
+		var b strings.Builder
+		b.WriteString(coloredLabel)
+		b.WriteString(fmt.Sprintf("\n  path_a: %s (%d files)", opts.PathA, result.TotalA))
+		b.WriteString(fmt.Sprintf("\n  path_b: %s (%d files)", opts.PathB, result.TotalB))
+
+		if result.Identical {
+			b.WriteString(fmt.Sprintf("\n  all %d files are identical", result.TotalA))
+		} else {
+			if len(result.OnlyInA) > 0 {
+				b.WriteString(fmt.Sprintf("\n  only in A (%d):", len(result.OnlyInA)))
+				for _, f := range result.OnlyInA {
+					b.WriteString(fmt.Sprintf("\n    %s", f))
+				}
+			}
+			if len(result.OnlyInB) > 0 {
+				b.WriteString(fmt.Sprintf("\n  only in B (%d):", len(result.OnlyInB)))
+				for _, f := range result.OnlyInB {
+					b.WriteString(fmt.Sprintf("\n    %s", f))
+				}
+			}
+			if len(result.Different) > 0 {
+				b.WriteString(fmt.Sprintf("\n  different  (%d):", len(result.Different)))
+				for _, f := range result.Different {
+					b.WriteString(fmt.Sprintf("\n    %s", f))
+				}
+			}
+		}
+		return b.String(), nil
+	}
+
+	return coloredLabel, nil
 }

@@ -2,6 +2,7 @@ package ignore
 
 import (
 	"os"
+	"strings"
 
 	gitignore "github.com/sabhiram/go-gitignore"
 )
@@ -45,4 +46,20 @@ func (m *Matcher) Match(path string) bool {
 		return false
 	}
 	return m.ig.MatchesPath(path)
+}
+
+// LoadFileAndPatterns combines patterns from a file with additional inline patterns.
+// If the file does not exist, only the extra patterns are used (no error).
+// Returns an error only for real I/O failures.
+func LoadFileAndPatterns(path string, extra []string) (*Matcher, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return LoadPatterns(extra), nil
+		}
+		return nil, err
+	}
+	lines := append(strings.Split(string(data), "\n"), extra...)
+	ig := gitignore.CompileIgnoreLines(lines...)
+	return &Matcher{ig: ig}, nil
 }

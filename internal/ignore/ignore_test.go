@@ -116,3 +116,47 @@ func TestLoadPatterns_Empty_MatchesNothing(t *testing.T) {
 		t.Error("empty patterns should match nothing")
 	}
 }
+
+// ── LoadFileAndPatterns ──────────────────────────────────────────────────────
+
+func TestLoadFileAndPatterns_CombinesFileAndExtra(t *testing.T) {
+	path := writeIgnoreFile(t, "*.log\n")
+	m, err := ignore.LoadFileAndPatterns(path, []string{"*.tmp"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !m.Match("error.log") {
+		t.Error("expected error.log to match *.log from file")
+	}
+	if !m.Match("temp.tmp") {
+		t.Error("expected temp.tmp to match *.tmp from extra patterns")
+	}
+	if m.Match("main.go") {
+		t.Error("expected main.go NOT to match")
+	}
+}
+
+func TestLoadFileAndPatterns_FileNotExist_UsesExtraOnly(t *testing.T) {
+	m, err := ignore.LoadFileAndPatterns("/nonexistent/.fmatchignore", []string{"*.swp"})
+	if err != nil {
+		t.Fatalf("missing file should not return error: %v", err)
+	}
+	if !m.Match("vim.swp") {
+		t.Error("expected vim.swp to match *.swp from extra patterns")
+	}
+	if m.Match("main.go") {
+		t.Error("expected main.go NOT to match")
+	}
+}
+
+func TestLoadFileAndPatterns_NoExtra_BehavesLikeLoadFile(t *testing.T) {
+	path := writeIgnoreFile(t, "*.bak\n")
+	m, err := ignore.LoadFileAndPatterns(path, []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !m.Match("old.bak") {
+		t.Error("expected old.bak to match *.bak")
+	}
+}
+
