@@ -52,11 +52,7 @@ The user needs a program that:
 - `dev` — working branch. All code, architecture docs, `CURRENT_STATUS.md`, and analysis files are committed here.
 - `main` — public/release branch. Only approved, working code and polished docs (README, CONTRIBUTING, CHANGELOG). Merged from `dev` via PR.
 
-## Workspace
 
-- Path: `/Users/mario/repos/001-sandbox/files_diff`
-- State: Step 1 partial. Files committed on `dev`: `go.mod`, `go.sum`, `main.go`, `cmd/root.go`
-- Next commit: `Dockerfile` + `Makefile` → Step 1 complete
 
 ## Next Steps
 

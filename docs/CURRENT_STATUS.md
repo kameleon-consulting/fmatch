@@ -13,8 +13,8 @@ HOW TO UPDATE:
 NEVER: leave this file reflecting a state older than the last session.
 -->
 
-> **Last updated**: 2026-04-27
-> **Current version**: pre-v1.0 (scaffolding partial — Step 1 in progress)
+> **Last updated**: 2026-04-28
+> **Current version**: pre-v1.0 (Step 1 complete — Step 2 starting)
 > **Active branch**: `dev`
 
 ---
@@ -25,7 +25,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 | Step | Description | Status |
 |------|-------------|--------|
-| 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | 🟡 |
+| 1 | Scaffolding: `go mod init`, directory structure, Dockerfile, Makefile | ✅ |
 | 2 | Package `internal/comparator` — File (TDD) | ⬜ |
 | 3 | Package `internal/output` (TDD) | ⬜ |
 | 4 | Package `cmd` — Cobra command + flags | ⬜ |
@@ -40,33 +40,30 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 1 — Scaffolding (partial)**
-- `go.mod` with `require` block (Cobra v1.10.2, go-gitignore v0.0.0-20210923224102)
-- `go.sum` generated (10 lines)
+**Step 1 — Scaffolding ✅**
+- `go.mod` + `go.sum` (Cobra v1.10.2, go-gitignore)
 - `main.go` — minimal entry point delegating to `cmd.Execute()`
-- `cmd/root.go` — Cobra root command (Use, Short, Long, RunE stub — no flags per DEC-10)
-- `go build ./...` and `go vet ./...` pass with exit code 0
-- DEC-8, DEC-9, DEC-10 closed and documented in `PROJECT_CONTEXT.md`
-
-**Pending for Step 1 completion (next session):**
-- `Dockerfile` (golang:1.24-alpine)
+- `cmd/root.go` — Cobra root command stub, no flags (DEC-10)
+- `Dockerfile` (golang:1.24-alpine + gcc/musl-dev for CGO/race detector)
 - `Makefile` (targets: build, test, lint, cross-compile)
+- Verified via Docker: `make build` ✅ — `make test -race` ✅
 
 ---
 
 ## In Progress
 
-**Step 1 — Scaffolding** (completing next session: Dockerfile + Makefile)
+**Step 2 — Package `internal/comparator` — File (TDD)**
 
 ---
 
 ## Next Step
 
-**Step 1 — Finalize Scaffolding** (resume here next session)
+**Step 2 — TDD `internal/comparator` (file comparison)**
 
-1. Create `Dockerfile` (golang:1.24-alpine, with `make` and `git`)
-2. Create `Makefile` with targets: `build`, `test`, `lint`, `cross-compile`
-3. Commit Step 1 complete → then move to Step 2
+1. Write `internal/comparator/file_test.go` (tests first — TDD)
+2. Write `internal/comparator/file.go` (implementation)
+3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
+4. Commit → move to Step 3
 
 ---
 
