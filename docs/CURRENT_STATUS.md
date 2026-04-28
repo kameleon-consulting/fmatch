@@ -14,7 +14,7 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-28
-> **Current version**: pre-v1.0 (Step 5 complete — Step 6 starting)
+> **Current version**: pre-v1.0 (Step 6 complete — Step 7 starting)
 > **Active branch**: `dev`
 
 ---
@@ -30,7 +30,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 3 | Package `internal/output` (TDD) | ✅ |
 | 4 | Package `cmd` — Cobra command + flags | ✅ |
 | 5 | Integration: `main.go` wiring | ✅ |
-| 6 | Package `internal/ignore` (TDD) | ⬜ |
+| 6 | Package `internal/ignore` (TDD) | ✅ |
 | 7 | Package `internal/comparator` — Directory (TDD) | ⬜ |
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ⬜ |
 | 9 | Release: `.goreleaser.yaml`, cross-platform build | ⬜ |
@@ -40,29 +40,29 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Last Completed
 
-**Step 5 — Integration `RunE` ✅**
-- `ExitError` type (exported): porta exit code, testabile senza `os.Exit`
-- `runE`: flag reading, stat, type mismatch, `CompareFiles`, `Format`, exit 0/1/2
-- `resolveVerbosity`: mappa `-q`/`-v`/`-vv` → `output.Verbosity`
-- `Execute()`: ispeziona `ExitError` per `os.Exit(Code)` corretto
-- 5 test integrazione: identical, different/exit1, not-found/exit2, type-mismatch/exit2, quiet
+**Step 6 — Package `internal/ignore` ✅**
+- `go.mod`/`go.sum`: aggiunto `github.com/sabhiram/go-gitignore v0.0.0-20210923224102`
+- `internal/ignore/ignore.go`: `Matcher` — `LoadFile` (fallback su file mancante), `LoadPatterns`, `Match()`
+- `internal/ignore/ignore_test.go`: 8 test (pattern semplici, file mancante, commenti, righe vuote, negazione `!`, `**`, LoadPatterns, lista vuota)
+- All tests pass with `-race` detector
 
 ---
 
 ## In Progress
 
-**Step 6 — Package `internal/ignore` (TDD)**
+**Step 7 — Package `internal/comparator` — Directory (TDD)**
 
 ---
 
 ## Next Step
 
-**Step 6 — TDD `internal/ignore` (pattern matching)**
+**Step 7 — TDD `internal/comparator` — Directory**
 
-1. Write `internal/ignore/ignore_test.go` (tests first — TDD)
-2. Write `internal/ignore/ignore.go` (wraps go-gitignore)
+1. Write `internal/comparator/dir_test.go` (tests first — TDD)
+2. Write `internal/comparator/dir.go` (recursive walk, ignore integration)
 3. Run `docker run --rm -v $(pwd):/app fmatch-dev make test` → all green
-4. Commit → move to Step 7
+4. Wire directory support into `cmd/root.go` `runE`
+5. Commit → move to Step 8
 
 ---
 
