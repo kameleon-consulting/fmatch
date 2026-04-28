@@ -71,6 +71,9 @@ fmatch --no-ignore dir_a/ dir_b/
 
 # No colored output
 fmatch --no-color file_a.txt file_b.txt
+
+# Save output to file (--no-color avoids ANSI codes in the file)
+fmatch --no-color -v dir_a/ dir_b/ > result.txt
 ```
 
 ---
