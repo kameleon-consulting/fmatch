@@ -2,7 +2,10 @@ module github.com/mlabate/fmatch
 
 go 1.24
 
-require github.com/spf13/cobra v1.10.2
+require (
+	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+	github.com/spf13/cobra v1.10.2
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
