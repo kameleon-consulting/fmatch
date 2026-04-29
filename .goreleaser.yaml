@@ -27,7 +27,7 @@ builds:
         goarch: arm64
     ldflags:
       # Inject version and strip debug info for smaller binaries
-      - -s -w -X github.com/mlabate/fmatch/cmd.Version={{.Version}}
+      - -s -w -X github.com/kameleon-consulting/fmatch/cmd.Version={{.Version}}
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"

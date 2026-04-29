@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mlabate/fmatch/cmd"
+	"github.com/kameleon-consulting/fmatch/cmd"
 )
 
 // writeTemp creates a temporary file with the given content.

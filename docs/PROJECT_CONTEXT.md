@@ -56,6 +56,32 @@ The user needs a program that:
 
 ## Next Steps
 
-1. Create `Dockerfile` (golang:1.24-alpine, with `make` and `git`) — Step 1 pending
-2. Create `Makefile` (targets: build, test, lint, cross-compile) — Step 1 pending
-3. Commit → Step 1 ✅ complete → Step 2: TDD `internal/comparator` (file comparison)
+> Per lo stato corrente e il prossimo step, vedere `CURRENT_STATUS.md`.
+
+
+## Design Bug — Directory Comparison (detected 2026-04-28)
+
+The original directory comparison matched files by **relative path** — incorrect behavior relative to the actual requirement.
+
+**Confirmed real requirement:**
+> "I want to know if two files are identical regardless of their name."
+
+Comparison must be hash-based (SHA-256), not name/path-based.
+
+## Additional Confirmed Requirements (2026-04-28)
+
+| # | Requirement | Detail |
+|---|-------------|--------|
+| A | `fmatch dirA dirB` — hash-based | Files are matched by content (SHA-256), not by relative path. Files with identical content but different names are considered matched. |
+| B | `fmatch dirA` — find duplicates | With a single directory argument: find all files with identical content within that directory, grouped by hash. |
+| C | `fmatch fileA` — error | A single file argument has no semantic meaning: exit 2 with explanatory message. |
+| D | `fmatch fileA fileB` — unchanged | Single file comparison remains unchanged (already correct: content-based, name irrelevant). |
+
+## Additional Closed Decisions (2026-04-28)
+
+| # | Question | Decision |
+|---|----------|---------|
+| 11 | CLI args | ✅ `RangeArgs(1, 2)` — 1 or 2 arguments. 1 arg = directory only (duplicates); 2 args = files or directories. |
+| 12 | Directory data structure | ✅ `HashGroup{Hash, InA []string, InB []string}` as common primitive for both cases (2-dir compare and 1-dir duplicates). |
+| 13 | `fileHash` refactoring | ✅ Move `fileHash` from `output/formatter.go` to a shared package (`internal/hash`) to avoid circular dependencies. |
+

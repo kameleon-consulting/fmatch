@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mlabate/fmatch/internal/comparator"
-	"github.com/mlabate/fmatch/internal/hash"
+	"github.com/kameleon-consulting/fmatch/internal/comparator"
+	"github.com/kameleon-consulting/fmatch/internal/hash"
 )
 
 // Verbosity represents the output verbosity level.

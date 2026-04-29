@@ -6,8 +6,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/mlabate/fmatch/internal/comparator"
-	"github.com/mlabate/fmatch/internal/ignore"
+	"github.com/kameleon-consulting/fmatch/internal/comparator"
+	"github.com/kameleon-consulting/fmatch/internal/ignore"
 )
 
 // noMatcher is an empty ignore.Matcher that never ignores anything.

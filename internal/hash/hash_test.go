@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mlabate/fmatch/internal/hash"
+	"github.com/kameleon-consulting/fmatch/internal/hash"
 )
 
 // expectedHash computes the SHA-256 hash of the given bytes using stdlib directly.

@@ -1,4 +1,4 @@
-module github.com/mlabate/fmatch
+module github.com/kameleon-consulting/fmatch
 
 go 1.24
 

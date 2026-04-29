@@ -263,3 +263,290 @@ Used for:
 - Manual test with real files on macOS
 - Cross-compilation check: `GOOS=linux go build`, `GOOS=windows go build`
 - Performance test with large directories
+
+---
+
+## Directory Comparison Redesign v1.1 (confirmed 2026-04-28)
+
+### Problem to fix
+
+The v1.0 directory comparison matched files by **relative path** — incorrect.
+The actual requirement is: match by **content (SHA-256)**, regardless of name.
+
+---
+
+### New data structures (`internal/comparator/dir.go`)
+
+```go
+// HashGroup groups files that share the same SHA-256 hash.
+// Used for both 2-dir comparison and 1-dir duplicate detection.
+type HashGroup struct {
+    Hash string   // SHA-256 hex (64 chars)
+    InA  []string // relative paths in A with this hash (1+ entries)
+    InB  []string // relative paths in B with this hash (1+ entries; nil in DuplicateResult)
+}
+
+// DirCompareResult: result of a hash-based two-directory comparison.
+type DirCompareResult struct {
+    Identical bool        // true only if both OnlyInA and OnlyInB are empty
+    Matched   []HashGroup // hashes present in both dirs; InA and InB list ALL files with that hash
+    OnlyInA   []HashGroup // hashes present only in A (no file with that content in B)
+    OnlyInB   []HashGroup // hashes present only in B (no file with that content in A)
+}
+
+// DuplicateResult: result of duplicate detection within a single directory.
+type DuplicateResult struct {
+    HasDuplicates bool
+    Groups        []HashGroup // groups with 2+ files (InA used; InB always nil)
+    Unique        []string    // relative paths of files with a unique hash
+}
+```
+
+**Confirmed matching rule:** all files with the same hash from either side are grouped together. Example: A has `f1.txt` and `f2.txt` with hash X, B has `f3.txt` with hash X → HashGroup{Hash: X, InA: ["f1.txt","f2.txt"], InB: ["f3.txt"]} → **Matched**.
+
+---
+
+### New functions (`internal/comparator/dir.go`)
+
+```go
+// CompareDir compares two directories by matching files on SHA-256 hash.
+func CompareDir(pathA, pathB string, opts DirOptions) (DirCompareResult, error)
+
+// FindDuplicates finds files with identical content within a single directory.
+func FindDuplicates(path string, opts DirOptions) (DuplicateResult, error)
+
+// hashDir scans a directory and returns a map of hash → []relPath.
+func hashDir(root string, opts DirOptions) (map[string][]string, error)
+```
+
+`hashDir` is the shared primitive for both. Replaces `walkDir` + path-based matching.
+
+---
+
+### `fileHash` refactoring (circular dependency)
+
+`fileHash` currently lives in `output/formatter.go`. To be used by `comparator/dir.go`
+without creating a circular dependency (`comparator` → `output` → `comparator`), it must be moved.
+
+**Decision:** create `internal/hash/hash.go` with a single exported function:
+```go
+// FileHash computes the SHA-256 hash of a file and returns it as a lowercase hex string.
+func FileHash(path string) (string, error)
+```
+Both `comparator` and `output` import `internal/hash`. No circular dependency.
+
+---
+
+### CLI changes (`cmd/root.go`)
+
+- `cobra.ExactArgs(2)` → `cobra.RangeArgs(1, 2)`
+- Routing in `runE`:
+  - 1 argument → must be a directory → `FindDuplicates` → `FormatDuplicates`
+  - 1 argument → is a file → exit 2: `"fmatch: single file argument requires a second path to compare against"`
+  - 2 arguments, both files → `CompareFiles` (unchanged)
+  - 2 arguments, both dirs → `CompareDir` hash-based → `FormatDirCompare`
+  - 2 arguments, mixed file/dir → exit 2: `"fmatch: cannot compare file with directory"`
+
+---
+
+### New output functions (`internal/output/formatter.go`)
+
+`FormatDir` is **removed** and replaced by:
+
+```go
+// FormatDirCompare formats a DirCompareResult for all verbosity levels.
+func FormatDirCompare(result comparator.DirCompareResult, opts Options) (string, error)
+
+// FormatDuplicates formats a DuplicateResult for all verbosity levels.
+func FormatDuplicates(result comparator.DuplicateResult, opts Options) (string, error)
+```
+
+**FormatDirCompare output:**
+
+| Level | Output |
+|-------|--------|
+| Quiet | `""` |
+| Normal | `IDENTICAL` or `DIFFERENT\n  N matched · N only in A · N only in B` |
+| Verbose/VV | Label + path_a/path_b (with file count) + matched list with abbreviated hash + only in A + only in B |
+
+Verbose example:
+```
+DIFFERENT
+  path_a: /dirA (5 files)
+  path_b: /dirB (6 files)
+  matched (2):
+    [a3f9c1d2] dirA/report.pdf, dirA/report_copy.pdf  ↔  dirB/report_final.pdf
+    [b12c3e4f] dirA/img.png                           ↔  dirB/foto.png
+  only in A (1):
+    [ff001122] dirA/old.txt
+  only in B (3):
+    [cc112233] dirB/new1.txt, dirB/new2.txt
+    [dd223344] dirB/extra.log
+```
+
+**FormatDuplicates output:**
+
+| Level | Output |
+|-------|--------|
+| Quiet | `""` |
+| Normal | `N duplicate groups found` or `No duplicates found` |
+| Verbose/VV | Label + for each group: abbreviated hash, count, file list |
+
+Verbose example:
+```
+3 duplicate groups found
+  [a3f9c1d2] (2 files):
+    report.pdf
+    report_final.pdf
+  [b12c3e4f] (3 files):
+    img.png
+    foto.png
+    backup.png
+```
+
+---
+
+### Files to modify
+
+| File | Change |
+|------|--------|
+| `internal/hash/hash.go` | **New** — `FileHash(path) (string, error)` |
+| `internal/hash/hash_test.go` | **New** — TDD |
+| `internal/comparator/dir.go` | **Rewrite** — `CompareDir` + `FindDuplicates` + `hashDir` |
+| `internal/comparator/dir_test.go` | **Rewrite** — TDD (written before implementation) |
+| `internal/output/formatter.go` | **Modify** — remove `FormatDir`, add `FormatDirCompare` + `FormatDuplicates`; `fileHash` → use `hash.FileHash` |
+| `internal/output/formatter_test.go` | **Modify** — update/add tests |
+| `cmd/root.go` | **Modify** — `RangeArgs(1,2)`, 1-arg routing, update output calls |
+| `CHANGELOG.md` | **New** — retroactive v0.1.0 entry + v1.1.0 entry (BREAKING noted) |
+| `CONTRIBUTING.md` | **New** — contribution guidelines |
+| `.github/workflows/ci.yml` | **New** — CI pipeline (test + vet on push/PR to `main` and `dev`) |
+
+---
+
+### Implementation order (v1.1)
+
+1. `internal/hash` — TDD + implementation (foundation for everything else)
+2. `internal/comparator/dir.go` — TDD + rewrite (uses `hash.FileHash`)
+3. `internal/output/formatter.go` — update dir formatting functions
+4. `cmd/root.go` — update routing
+5. Verify: `go test ./...`, `go build ./...`, manual test
+6. Open-source artifacts (before merge to `main`):
+   - Create `CHANGELOG.md` (see CHANGELOG notes section)
+   - Create `CONTRIBUTING.md`
+   - Create `.github/workflows/ci.yml` (see CI spec section)
+7. Release:
+   - Update `README.md` (new directory comparison behavior, new single-dir usage)
+   - Update `CURRENT_STATUS.md`
+   - Merge `dev` → `main`
+   - Tag `v1.1.0`
+   - Run `make release` (GoReleaser publishes versioned archives to GitHub Releases)
+
+---
+
+### CHANGELOG notes
+
+`CHANGELOG.md` **does not exist yet** — it was not created at v0.1.0 release. It must be created before v1.1.0.
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) style. Content:
+
+```markdown
+# Changelog
+
+## [Unreleased]
+
+## [1.1.0] - YYYY-MM-DD
+### Changed
+- **BREAKING**: directory comparison now matches files by content (SHA-256 hash)
+  instead of by relative path. Files with identical content but different names
+  or locations are now considered matched.
+- `FormatDir` replaced by `FormatDirCompare` and `FormatDuplicates` (internal).
+
+### Added
+- Single-directory mode: `fmatch <dir>` finds duplicate files within a directory,
+  grouped by content hash.
+- New package `internal/hash` with shared `FileHash` function.
+
+## [0.1.0] - 2026-04-28
+### Added
+- Initial release.
+- File comparison: byte-by-byte with early exit, 4 verbosity levels (-q/-v/-vv).
+- Directory comparison: recursive walk, depth limit, `.fmatchignore` patterns.
+- Exit codes: 0 (identical), 1 (different), 2 (error).
+- Cross-platform binaries: linux/darwin (amd64/arm64), windows/amd64.
+- GoReleaser pipeline.
+```
+
+> **Note on distributions**: `dist/` is excluded from git (`.gitignore`). Versioned
+> binary archives are published automatically by GoReleaser to GitHub Releases when
+> `make release` is run with a valid `GITHUB_TOKEN` and a Git tag.
+
+---
+
+### CI spec (`.github/workflows/ci.yml`)
+
+Triggers: push and pull_request targeting `main` or `dev`.
+
+Steps:
+1. `actions/checkout@v4`
+2. `actions/setup-go@v5` — Go version from `go.mod`
+3. `go vet ./...`
+4. `go test -race ./...`
+
+No build artifact upload needed (GoReleaser handles releases separately).
+
+```yaml
+name: CI
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+```
+
+---
+
+### CONTRIBUTING spec (`CONTRIBUTING.md`)
+
+Minimal content required:
+- Prerequisites (Go 1.24+, Docker, Make)
+- How to run tests locally (`docker run ... make test`)
+- Branching strategy (`dev` → PR → `main`)
+- Commit convention (Conventional Commits)
+- How to open an issue or PR
+
+---
+
+### TDD — Tests to write before implementation
+
+
+**`internal/hash/hash_test.go`:**
+- Known file → expected SHA-256 value
+- Empty file → correct hash (SHA-256 of empty string)
+- Non-existent file → error
+
+**`internal/comparator/dir_test.go`:**
+- Identical dirs, same names → Identical=true, Matched full
+- Identical dirs, different names → Identical=true, Matched full (key case)
+- Files only in A → OnlyInA
+- Files only in B → OnlyInB
+- Same hash, many-to-many (A: f1+f2, B: f3) → single HashGroup in Matched
+- Empty dirs → Identical=true
+- Single dir, no duplicates → HasDuplicates=false
+- Single dir, with duplicates → correct groups
+- Depth limit respected
+- Ignore patterns respected
+
+**`internal/output/formatter_test.go`:**
+- `FormatDirCompare` for all verbosity levels (Quiet/Normal/Verbose/VV)
+- `FormatDuplicates` for all verbosity levels
+
