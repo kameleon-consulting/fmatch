@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mlabate/fmatch/internal/hash"
-	"github.com/mlabate/fmatch/internal/ignore"
+	"github.com/kameleon-consulting/fmatch/internal/hash"
+	"github.com/kameleon-consulting/fmatch/internal/ignore"
 )
 
 // DirOptions controls directory traversal behaviour.

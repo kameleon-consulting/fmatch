@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mlabate/fmatch/internal/ignore"
+	"github.com/kameleon-consulting/fmatch/internal/ignore"
 )
 
 // writeIgnoreFile creates a temporary .fmatchignore-style file with the given content.

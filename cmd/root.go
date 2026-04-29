@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mlabate/fmatch/internal/comparator"
-	"github.com/mlabate/fmatch/internal/ignore"
-	"github.com/mlabate/fmatch/internal/output"
+	"github.com/kameleon-consulting/fmatch/internal/comparator"
+	"github.com/kameleon-consulting/fmatch/internal/ignore"
+	"github.com/kameleon-consulting/fmatch/internal/output"
 	"github.com/spf13/cobra"
 )
 
 // Version is injected at build time via ldflags:
 //
-//	-X github.com/mlabate/fmatch/cmd.Version=<version>
+//	-X github.com/kameleon-consulting/fmatch/cmd.Version=<version>
 var Version = "dev"
 
 // ExitError represents a deliberate exit with a specific code.

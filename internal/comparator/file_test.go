@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mlabate/fmatch/internal/comparator"
+	"github.com/kameleon-consulting/fmatch/internal/comparator"
 )
 
 // writeTemp creates a temporary file with the given content.

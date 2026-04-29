@@ -92,7 +92,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 ## Key Context
 
 - Binary name: `fmatch`
-- Go module path: `github.com/mlabate/fmatch`
+- Go module path: `github.com/kameleon-consulting/fmatch`
 - GitHub remote: `git@github.com:mlabate/fmatch.git`
 - License: GPL v3
 - Go version: 1.24

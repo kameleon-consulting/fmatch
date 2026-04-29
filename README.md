@@ -18,14 +18,14 @@
 
 ### Download pre-built binary
 
-Download the latest release from the [Releases](https://github.com/mlabate/fmatch/releases) page.
+Download the latest release from the [Releases](https://github.com/kameleon-consulting/fmatch/releases) page.
 
 ### Build from source
 
 Requirements: Go 1.24+, Docker (for reproducible builds)
 
 ```bash
-git clone https://github.com/mlabate/fmatch.git
+git clone https://github.com/kameleon-consulting/fmatch.git
 cd fmatch
 docker build -t fmatch-dev .
 docker run --rm -v $(pwd):/app fmatch-dev make build
