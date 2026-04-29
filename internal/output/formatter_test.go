@@ -31,7 +31,15 @@ func sha256hex(data []byte) string {
 	return fmt.Sprintf("%x", h)
 }
 
-// ── Quiet mode ───────────────────────────────────────────────────────────────
+// Fake 64-char SHA-256 hex strings for constructing test fixtures.
+// Abbreviated (first 8 chars) used in expected output checks.
+const (
+	hashAlpha = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" // abbrev: a1b2c3d4
+	hashBeta  = "b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2d3e4f5a6b1c2" // abbrev: b1c2d3e4
+	hashGamma = "c1d2e3f4a5b6c1d2e3f4a5b6c1d2e3f4a5b6c1d2e3f4a5b6c1d2e3f4a5b6c1d2" // abbrev: c1d2e3f4
+)
+
+// ── Format (file comparison) ──────────────────────────────────────────────────
 
 func TestFormat_Quiet_Identical(t *testing.T) {
 	result := comparator.Result{Identical: true, DiffOffset: -1, SizeA: 10, SizeB: 10}
@@ -59,8 +67,6 @@ func TestFormat_Quiet_Different(t *testing.T) {
 	}
 }
 
-// ── Normal mode ──────────────────────────────────────────────────────────────
-
 func TestFormat_Normal_Identical(t *testing.T) {
 	result := comparator.Result{Identical: true, DiffOffset: -1, SizeA: 10, SizeB: 10}
 	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
@@ -86,8 +92,6 @@ func TestFormat_Normal_Different(t *testing.T) {
 		t.Errorf("expected %q, got %q", "DIFFERENT", got)
 	}
 }
-
-// ── Verbose mode ─────────────────────────────────────────────────────────────
 
 func TestFormat_Verbose_Identical(t *testing.T) {
 	content := []byte("hello")
@@ -128,8 +132,6 @@ func TestFormat_Verbose_Different(t *testing.T) {
 	}
 }
 
-// ── Very Verbose mode ────────────────────────────────────────────────────────
-
 func TestFormat_VV_Identical_ContainsSHA256(t *testing.T) {
 	content := []byte("hello, fmatch!")
 	pathA, pathB := writeTemp(t, content), writeTemp(t, content)
@@ -161,8 +163,6 @@ func TestFormat_VV_Different_ContainsDiffOffset(t *testing.T) {
 	}
 }
 
-// ── Color output ─────────────────────────────────────────────────────────────
-
 func TestFormat_NoColor_NoANSI(t *testing.T) {
 	result := comparator.Result{Identical: true, DiffOffset: -1, SizeA: 5, SizeB: 5}
 	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
@@ -189,12 +189,14 @@ func TestFormat_WithColor_ContainsANSI(t *testing.T) {
 	}
 }
 
-// ── FormatDir ────────────────────────────────────────────────────────────────
+// ── FormatDirCompare ──────────────────────────────────────────────────────────
 
-func TestFormatDir_Quiet(t *testing.T) {
-	result := comparator.DirResult{Identical: true, TotalA: 3, TotalB: 3}
+// TestFormatDirCompare_Quiet: quiet mode always returns empty string.
+func TestFormatDirCompare_Quiet(t *testing.T) {
+	result := comparator.DirCompareResult{Identical: true}
 	opts := output.Options{Level: output.VerbosityQuiet, NoColor: true}
-	got, err := output.FormatDir(result, opts)
+
+	got, err := output.FormatDirCompare(result, opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -203,10 +205,17 @@ func TestFormatDir_Quiet(t *testing.T) {
 	}
 }
 
-func TestFormatDir_Normal_Identical(t *testing.T) {
-	result := comparator.DirResult{Identical: true, TotalA: 3, TotalB: 3}
+// TestFormatDirCompare_Normal_Identical: normal mode, identical dirs → "IDENTICAL".
+func TestFormatDirCompare_Normal_Identical(t *testing.T) {
+	result := comparator.DirCompareResult{
+		Identical: true,
+		Matched: []comparator.HashGroup{
+			{Hash: hashAlpha, InA: []string{"a.txt"}, InB: []string{"a.txt"}},
+		},
+	}
 	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
-	got, err := output.FormatDir(result, opts)
+
+	got, err := output.FormatDirCompare(result, opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -215,51 +224,166 @@ func TestFormatDir_Normal_Identical(t *testing.T) {
 	}
 }
 
-func TestFormatDir_Normal_Different_ContainsCounts(t *testing.T) {
-	result := comparator.DirResult{
+// TestFormatDirCompare_Normal_Different: normal mode, different dirs → label + counts.
+func TestFormatDirCompare_Normal_Different(t *testing.T) {
+	result := comparator.DirCompareResult{
 		Identical: false,
-		TotalA:    5, TotalB: 5,
-		Different: []string{"changed.txt"},
-		OnlyInA:   []string{"extra_a.txt"},
-		OnlyInB:   []string{},
+		Matched:   []comparator.HashGroup{{Hash: hashAlpha, InA: []string{"common.txt"}, InB: []string{"common.txt"}}},
+		OnlyInA:   []comparator.HashGroup{{Hash: hashBeta, InA: []string{"extra_a.txt"}}},
+		OnlyInB:   []comparator.HashGroup{{Hash: hashGamma, InB: []string{"extra_b.txt"}}},
 	}
 	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
-	got, err := output.FormatDir(result, opts)
+
+	got, err := output.FormatDirCompare(result, opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(got, "DIFFERENT") {
-		t.Errorf("expected DIFFERENT in output, got %q", got)
-	}
-	if !strings.Contains(got, "1 different") {
-		t.Errorf("expected count '1 different' in output, got %q", got)
-	}
-	if !strings.Contains(got, "1 only in A") {
-		t.Errorf("expected '1 only in A' in output, got %q", got)
+	for _, want := range []string{"DIFFERENT", "1 matched", "1 only in A", "1 only in B"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, got)
+		}
 	}
 }
 
-func TestFormatDir_Verbose_Different_ContainsFileLists(t *testing.T) {
-	result := comparator.DirResult{
-		Identical: false,
-		TotalA:    3, TotalB: 3,
-		Different: []string{"changed.txt"},
-		OnlyInA:   []string{"only_a.txt"},
-		OnlyInB:   []string{"only_b.txt"},
+// TestFormatDirCompare_Verbose_Identical: verbose, identical → paths, file count, matched section.
+func TestFormatDirCompare_Verbose_Identical(t *testing.T) {
+	result := comparator.DirCompareResult{
+		Identical: true,
+		Matched: []comparator.HashGroup{
+			{Hash: hashAlpha, InA: []string{"report.pdf"}, InB: []string{"report_copy.pdf"}},
+		},
 	}
 	opts := output.Options{
 		Level:   output.VerbosityVerbose,
 		NoColor: true,
-		PathA:   "/dir/A",
-		PathB:   "/dir/B",
+		PathA:   "/dirA",
+		PathB:   "/dirB",
 	}
-	got, err := output.FormatDir(result, opts)
+
+	got, err := output.FormatDirCompare(result, opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	for _, expected := range []string{"changed.txt", "only_a.txt", "only_b.txt", "/dir/A", "/dir/B"} {
-		if !strings.Contains(got, expected) {
-			t.Errorf("expected %q in verbose output, got:\n%s", expected, got)
+	for _, want := range []string{"IDENTICAL", "/dirA", "/dirB", "matched", "report.pdf", "report_copy.pdf", "↔"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected %q in verbose output, got:\n%s", want, got)
+		}
+	}
+	// Hash must be shown abbreviated (first 8 chars).
+	if !strings.Contains(got, hashAlpha[:8]) {
+		t.Errorf("expected abbreviated hash %q in output, got:\n%s", hashAlpha[:8], got)
+	}
+}
+
+// TestFormatDirCompare_Verbose_Different: verbose, different → all sections present.
+func TestFormatDirCompare_Verbose_Different(t *testing.T) {
+	result := comparator.DirCompareResult{
+		Identical: false,
+		Matched:   []comparator.HashGroup{{Hash: hashAlpha, InA: []string{"common.txt"}, InB: []string{"common_b.txt"}}},
+		OnlyInA:   []comparator.HashGroup{{Hash: hashBeta, InA: []string{"only_a.txt"}}},
+		OnlyInB:   []comparator.HashGroup{{Hash: hashGamma, InB: []string{"only_b.txt"}}},
+	}
+	opts := output.Options{
+		Level:   output.VerbosityVerbose,
+		NoColor: true,
+		PathA:   "/dirA",
+		PathB:   "/dirB",
+	}
+
+	got, err := output.FormatDirCompare(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{
+		"DIFFERENT", "/dirA", "/dirB",
+		"matched", "common.txt", "common_b.txt", "↔",
+		"only in A", "only_a.txt",
+		"only in B", "only_b.txt",
+		hashAlpha[:8], hashBeta[:8], hashGamma[:8],
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected %q in verbose output, got:\n%s", want, got)
+		}
+	}
+}
+
+// ── FormatDuplicates ──────────────────────────────────────────────────────────
+
+// TestFormatDuplicates_Quiet: quiet mode always returns empty string.
+func TestFormatDuplicates_Quiet(t *testing.T) {
+	result := comparator.DuplicateResult{HasDuplicates: false}
+	opts := output.Options{Level: output.VerbosityQuiet, NoColor: true}
+
+	got, err := output.FormatDuplicates(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "" {
+		t.Errorf("quiet mode: expected empty string, got %q", got)
+	}
+}
+
+// TestFormatDuplicates_Normal_NoDuplicates: normal mode, no duplicates → "No duplicates found".
+func TestFormatDuplicates_Normal_NoDuplicates(t *testing.T) {
+	result := comparator.DuplicateResult{
+		HasDuplicates: false,
+		Unique:        []string{"a.txt", "b.txt"},
+	}
+	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
+
+	got, err := output.FormatDuplicates(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(got, "No duplicates found") {
+		t.Errorf("expected %q, got %q", "No duplicates found", got)
+	}
+}
+
+// TestFormatDuplicates_Normal_WithDuplicates: normal mode → "N duplicate groups found".
+func TestFormatDuplicates_Normal_WithDuplicates(t *testing.T) {
+	result := comparator.DuplicateResult{
+		HasDuplicates: true,
+		Groups: []comparator.HashGroup{
+			{Hash: hashAlpha, InA: []string{"dup1.txt", "dup2.txt"}},
+			{Hash: hashBeta, InA: []string{"dup3.txt", "dup4.txt"}},
+		},
+	}
+	opts := output.Options{Level: output.VerbosityNormal, NoColor: true}
+
+	got, err := output.FormatDuplicates(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(got, "2 duplicate groups found") {
+		t.Errorf("expected %q, got %q", "2 duplicate groups found", got)
+	}
+}
+
+// TestFormatDuplicates_Verbose_WithDuplicates: verbose → hash, file count, file list.
+func TestFormatDuplicates_Verbose_WithDuplicates(t *testing.T) {
+	result := comparator.DuplicateResult{
+		HasDuplicates: true,
+		Groups: []comparator.HashGroup{
+			{Hash: hashAlpha, InA: []string{"report.pdf", "report_copy.pdf"}},
+		},
+		Unique: []string{"unique.txt"},
+	}
+	opts := output.Options{Level: output.VerbosityVerbose, NoColor: true}
+
+	got, err := output.FormatDuplicates(result, opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{
+		"1 duplicate group found",
+		hashAlpha[:8],
+		"(2 files)",
+		"report.pdf",
+		"report_copy.pdf",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected %q in verbose output, got:\n%s", want, got)
 		}
 	}
 }
