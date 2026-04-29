@@ -1,15 +1,16 @@
 # fmatch
 
-**fmatch** is a fast, cross-platform CLI tool to compare two files or directories for exact equality.
+**fmatch** is a fast, cross-platform CLI tool to compare files and directories for exact equality, or find duplicate files within a directory.
 
 ## Features
 
-- **Byte-exact comparison** — no false positives
-- **Directory comparison** — recursive, with set difference (only-in-A, only-in-B, different)
+- **Byte-exact file comparison** — no false positives, early exit on first difference
+- **Hash-based directory comparison** — matches files by content (SHA-256), regardless of name or path
+- **Duplicate detection** — single-directory mode finds all files with identical content
 - **Ignore patterns** — `.fmatchignore` file (`.gitignore` syntax) + inline `-i` flags
-- **Multiple verbosity levels** — quiet, normal, verbose, very-verbose (with SHA-256)
+- **Multiple verbosity levels** — quiet, normal, verbose, very-verbose (with SHA-256 hashes)
 - **Colored output** — ANSI colors, disable with `--no-color`
-- **Unix exit codes** — `0` identical, `1` different, `2` error
+- **Unix exit codes** — `0` identical/no duplicates, `1` different/duplicates found, `2` error
 
 ---
 
@@ -28,7 +29,7 @@ git clone https://github.com/mlabate/fmatch.git
 cd fmatch
 docker build -t fmatch-dev .
 docker run --rm -v $(pwd):/app fmatch-dev make build
-# Binary: ./bin/fmatch
+# Binary: ./fmatch
 ```
 
 ---
@@ -36,25 +37,35 @@ docker run --rm -v $(pwd):/app fmatch-dev make build
 ## Usage
 
 ```
-fmatch [flags] <path_a> <path_b>
+fmatch [flags] <path_a> [path_b]
 ```
+
+| Invocation | Behaviour |
+|-----------|-----------|
+| `fmatch <file_a> <file_b>` | Byte-by-byte file comparison |
+| `fmatch <dir_a> <dir_b>` | Hash-based directory comparison (content, not names) |
+| `fmatch <dir>` | Find duplicate files within a single directory |
+| `fmatch <file>` | Error — a single file argument requires a second path |
 
 ### Examples
 
 ```bash
-# Compare two files (default: normal output)
+# Compare two files
 fmatch file_a.txt file_b.txt
 
-# Compare two directories
+# Compare two directories (files matched by content, not by name)
 fmatch dir_a/ dir_b/
+
+# Find duplicate files within a directory
+fmatch /path/to/photos/
 
 # Quiet mode — exit code only
 fmatch -q file_a.txt file_b.txt; echo $?
 
-# Verbose — show paths and sizes
-fmatch -v file_a.txt file_b.txt
+# Verbose — show paths, sizes, matched groups
+fmatch -v dir_a/ dir_b/
 
-# Very verbose — show SHA-256 and diff offset
+# Very verbose — also show SHA-256 hashes and diff offset
 fmatch -vv file_a.txt file_b.txt
 
 # Limit directory depth
@@ -72,7 +83,7 @@ fmatch --no-ignore dir_a/ dir_b/
 # No colored output
 fmatch --no-color file_a.txt file_b.txt
 
-# Save output to file (--no-color avoids ANSI codes in the file)
+# Save output to file (--no-color avoids ANSI codes)
 fmatch --no-color -v dir_a/ dir_b/ > result.txt
 ```
 
@@ -98,8 +109,8 @@ fmatch --no-color -v dir_a/ dir_b/ > result.txt
 
 | Code | Meaning |
 |------|---------|
-| `0` | Files/directories are identical |
-| `1` | Differences found |
+| `0` | Files/directories are identical, or no duplicates found |
+| `1` | Differences found, or duplicate files found |
 | `2` | Error (file not found, permission denied, type mismatch) |
 
 Same convention as `diff` and `cmp` — suitable for use in scripts.
@@ -124,4 +135,4 @@ See `.fmatchignore.example` for a ready-to-use template.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL v3 — see [LICENSE](LICENSE).
