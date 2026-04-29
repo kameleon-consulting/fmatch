@@ -47,8 +47,11 @@ fmatch/
 │   ├── comparator/
 │   │   ├── file.go             # Single file comparison logic
 │   │   ├── file_test.go        # File comparison tests
-│   │   ├── dir.go              # Directory comparison logic
+│   │   ├── dir.go              # Directory comparison (hash-based, v1.1)
 │   │   └── dir_test.go         # Directory comparison tests
+│   ├── hash/
+│   │   ├── hash.go             # FileHash(path) — SHA-256 primitive (v1.1)
+│   │   └── hash_test.go
 │   ├── ignore/
 │   │   ├── ignore.go           # .fmatchignore pattern loading and matching
 │   │   └── ignore_test.go      # Pattern matching tests
@@ -58,36 +61,43 @@ fmatch/
 ├── main.go                     # Minimal entry point
 ├── go.mod
 ├── go.sum
+├── .env.example                # Template for local environment secrets
 ├── .fmatchignore.example       # Example exclusion pattern file
 ├── Makefile                    # Build targets
-├── .goreleaser.yaml            # GoReleaser configuration (future)
+├── .goreleaser.yaml            # GoReleaser configuration
 ├── Dockerfile                  # Development environment
 ├── LICENSE
-└── README.md
+├── README.md
+├── CHANGELOG.md
+└── CONTRIBUTING.md
 ```
 
 ### Execution Flow
 
 ```
-Input: path_a, path_b
+Input: path_a [path_b]
   │
-  ├─ Both exist? ──No──► Exit 2: error
+  ├─ 1 argument?
+  │   ├─ Is file → Exit 2: "single file argument requires a second path"
+  │   └─ Is dir  → FindDuplicates → FormatDuplicates → exit 0/1
   │
-  ├─ Path type?
-  │   ├─ File vs File ──► compareFiles
-  │   ├─ Dir vs Dir   ──► compareDirs
-  │   └─ Mismatch     ──► Exit 2: type mismatch error
-  │
-  ├─ compareFiles:
-  │   ├─ Different size? ──► DIFFERENT (exit 1)
-  │   └─ Byte-by-byte comparison
-  │       ├─ Match    ──► IDENTICAL (exit 0)
-  │       └─ Mismatch ──► DIFFERENT (exit 1)
-  │
-  └─ compareDirs:
-      ├─ Scan files (depth + ignore)
-      ├─ Set difference (only in A, only in B, in both)
-      ├─ Compare common files
+  └─ 2 arguments:
+      ├─ Both exist? ──No──► Exit 2: error
+      ├─ Type mismatch? ──Yes──► Exit 2: "cannot compare file with directory"
+      ├─ File vs File ──► CompareFiles → FormatFile
+      └─ Dir vs Dir   ──► CompareDir (hash-based) → FormatDirCompare
+
+  compareFiles:
+      ├─ Different size? ──► DIFFERENT (exit 1)
+      └─ Byte-by-byte comparison
+          ├─ Match    ──► IDENTICAL (exit 0)
+          └─ Mismatch ──► DIFFERENT (exit 1)
+
+  compareDir (hash-based):
+      ├─ hashDir(A) + hashDir(B) → map[sha256][]relPath
+      ├─ Hash in both → Matched
+      ├─ Hash only in A → OnlyInA
+      ├─ Hash only in B → OnlyInB
       └─ Report results ──► exit 0 or exit 1
 ```
 
@@ -130,7 +140,12 @@ Input: path_a, path_b
 ### 4. CLI Flags
 
 ```
-fmatch [flags] <path_a> <path_b>
+fmatch [flags] <path_a> [path_b]
+
+Modes:
+  fmatch <file_a> <file_b>   # byte-by-byte file comparison
+  fmatch <dir_a> <dir_b>     # hash-based directory comparison
+  fmatch <dir>               # find duplicate files within a directory
 
 Flags:
   -q, --quiet              Quiet mode: exit code only
@@ -139,7 +154,7 @@ Flags:
   -i, --ignore string      Additional patterns to ignore (repeatable)
       --ignore-file string  Path to pattern ignore file (default ".fmatchignore")
       --no-ignore           Disable .fmatchignore file
-      --no-follow-symlinks  Do not follow symlinks (default: follow)
+      --no-follow-symlinks  Do not follow symlinks (default: follow) [declared, not yet implemented]
       --no-color            Disable colored output
   -h, --help               Help
       --version             Version
