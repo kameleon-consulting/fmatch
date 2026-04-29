@@ -13,10 +13,10 @@ HOW TO UPDATE:
 NEVER: leave this file reflecting a state older than the last session.
 -->
 
-> **Last updated**: 2026-04-28
-> **Current version**: v1.0.0 (Steps 1-9 complete — v1.0 released)
-> **Next version**: v1.1.0 — directory comparison redesign (hash-based)
-> **Active branch**: `dev`
+> **Last updated**: 2026-04-29
+> **Current version**: v1.1.0 (Steps v1.1-1 → v1.1-5 complete — v1.1 ready for release)
+> **Next version**: v2.0.0 — Embedded Web UI (future)
+> **Active branch**: `dev` — ready to merge to `main`
 
 ---
 
@@ -42,11 +42,11 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 
 | Step | Description | Status |
 |------|-------------|--------|
-| v1.1-1 | `internal/hash` — new package `FileHash` (TDD) | ⬜ |
-| v1.1-2 | `internal/comparator/dir.go` — hash-based rewrite + `FindDuplicates` (TDD) | ⬜ |
-| v1.1-3 | `internal/output/formatter.go` — `FormatDirCompare` + `FormatDuplicates` | ⬜ |
-| v1.1-4 | `cmd/root.go` — `RangeArgs(1,2)`, 1-arg vs 2-arg routing | ⬜ |
-| v1.1-5 | Verify, README, CHANGELOG, tag `v1.1.0` | ⬜ |
+| v1.1-1 | `internal/hash` — new package `FileHash` (TDD) | ✅ |
+| v1.1-2 | `internal/comparator/dir.go` — hash-based rewrite + `FindDuplicates` (TDD) | ✅ |
+| v1.1-3 | `internal/output/formatter.go` — `FormatDirCompare` + `FormatDuplicates` | ✅ |
+| v1.1-4 | `cmd/root.go` — `RangeArgs(1,2)`, 1-arg vs 2-arg routing | ✅ |
+| v1.1-5 | Verify, README, CHANGELOG, CONTRIBUTING, CI, tag `v1.1.0` | ✅ |
 
 **v2.0 — Embedded Web UI (future)**
 
@@ -58,11 +58,14 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 
 ## Last Completed
 
-**Step 9 — Release pipeline ✅**
-- `.goreleaser.yaml`: 5 piattaforme (linux/darwin/windows × amd64/arm64 meno windows/arm64)
-- `Makefile`: target `snapshot` e `release` con goreleaser
-- Cross-compile verificato: tutti i binari compilano (`make cross-compile`)
-- Merge `dev` → `main`, tag `v1.0.0`
+**Step v1.1 — Directory comparison redesign ✅**
+- `internal/hash`: nuovo package `FileHash` (SHA-256, TDD)
+- `internal/comparator/dir.go`: rewrite hash-based (`CompareDir` + `FindDuplicates` + `hashDir`)
+- `internal/output/formatter.go`: `FormatDirCompare` + `FormatDuplicates`; `fileHash` → `hash.FileHash`
+- `cmd/root.go`: `RangeArgs(1,2)`, routing 1-arg (single-dir) vs 2-arg
+- Open-source artifacts: `CHANGELOG.md`, `CONTRIBUTING.md`, `.github/workflows/ci.yml`
+- `README.md` aggiornato; fix licenza MIT → GPL v3
+- Suite completa (`go test -race ./...`): 50+ test passati, tutti i package ✅
 
 ---
 
@@ -74,15 +77,15 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 
 ## Next Step
 
-**v1.1-1 — Package `internal/hash`** (TDD): create `internal/hash/hash.go` with `FileHash(path string) (string, error)`. This is the building block for all of v1.1 — must be done first.
+**v1.1-5g — Merge `dev` → `main`, tag `v1.1.0`, `make release`** (ultimo step — da eseguire ora).
 
 ---
 
 ## Open Points
 
-- `--no-follow-symlinks` flag declared but not implemented in walk logic (TODO v0.2.0 — deferred after v1.1)
-- v2.0 (Web UI) requires separate architectural decisions — deferred after v1.1
-- **KNOWN BUG**: v1.0 compares directories by relative path instead of hash — fixed in v1.1 (see `IMPLEMENTATION_PLAN.md` section "Directory Comparison Redesign v1.1")
+- `--no-follow-symlinks` flag declared but not implemented in walk logic (TODO — deferred post-v1.1)
+- v2.0 (Web UI) requires separate architectural decisions — deferred
+- **FIXED in v1.1**: v1.0 directory comparison by relative path → now hash-based
 
 ---
 
