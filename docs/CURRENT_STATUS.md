@@ -13,15 +13,18 @@ HOW TO UPDATE:
 NEVER: leave this file reflecting a state older than the last session.
 -->
 
-> **Last updated**: 2026-04-28
-> **Current version**: v0.1.0 (Steps 1-9 completi — v1.0 released)
-> **Active branch**: `dev`
+> **Last updated**: 2026-04-29
+> **Current version**: v1.1.0 (Steps v1.1-1 → v1.1-5 complete — v1.1 ready for release)
+> **Next version**: v2.0.0 — Embedded Web UI (future)
+> **Active branch**: `dev` — ready to merge to `main`
 
 ---
 
 ## Implementation Progress
 
-Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
+Reference: `docs/IMPLEMENTATION_PLAN.md`
+
+**v1.0 — CLI (complete)**
 
 | Step | Description | Status |
 |------|-------------|--------|
@@ -34,17 +37,35 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 | 7 | Package `internal/comparator` — Directory (TDD) | ✅ |
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ✅ |
 | 9 | Release: `.goreleaser.yaml`, cross-platform build | ✅ |
-| 10 | v2.0 — Embedded Web UI | ⬜ |
+
+**v1.1 — Directory comparison redesign (next)**
+
+| Step | Description | Status |
+|------|-------------|--------|
+| v1.1-1 | `internal/hash` — new package `FileHash` (TDD) | ✅ |
+| v1.1-2 | `internal/comparator/dir.go` — hash-based rewrite + `FindDuplicates` (TDD) | ✅ |
+| v1.1-3 | `internal/output/formatter.go` — `FormatDirCompare` + `FormatDuplicates` | ✅ |
+| v1.1-4 | `cmd/root.go` — `RangeArgs(1,2)`, 1-arg vs 2-arg routing | ✅ |
+| v1.1-5 | Verify, README, CHANGELOG, CONTRIBUTING, CI, tag `v1.1.0` | ✅ |
+
+**v2.0 — Embedded Web UI (future)**
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 10 | Embedded Web UI (`fmatch --ui`) | ⬜ |
 
 ---
 
 ## Last Completed
 
-**Step 9 — Release pipeline ✅**
-- `.goreleaser.yaml`: 5 piattaforme (linux/darwin/windows × amd64/arm64 meno windows/arm64)
-- `Makefile`: target `snapshot` e `release` con goreleaser
-- Cross-compile verificato: tutti i binari compilano (`make cross-compile`)
-- Merge `dev` → `main`, tag `v0.1.0`
+**Step v1.1 — Directory comparison redesign ✅**
+- `internal/hash`: nuovo package `FileHash` (SHA-256, TDD)
+- `internal/comparator/dir.go`: rewrite hash-based (`CompareDir` + `FindDuplicates` + `hashDir`)
+- `internal/output/formatter.go`: `FormatDirCompare` + `FormatDuplicates`; `fileHash` → `hash.FileHash`
+- `cmd/root.go`: `RangeArgs(1,2)`, routing 1-arg (single-dir) vs 2-arg
+- Open-source artifacts: `CHANGELOG.md`, `CONTRIBUTING.md`, `.github/workflows/ci.yml`
+- `README.md` aggiornato; fix licenza MIT → GPL v3
+- Suite completa (`go test -race ./...`): 50+ test passati, tutti i package ✅
 
 ---
 
@@ -56,14 +77,15 @@ Reference: `docs/IMPLEMENTATION_PLAN.md` — v1.0 Implementation Order
 
 ## Next Step
 
-**Step 10 — v2.0 Embedded Web UI** (pianificato, non avviato)
+**v1.1-5g — Merge `dev` → `main`, tag `v1.1.0`, `make release`** (ultimo step — da eseguire ora).
 
 ---
 
 ## Open Points
 
-- `--no-follow-symlinks` flag dichiarato ma non implementato nella logica di walk (TODO v0.2.0)
-- Step 10 (Web UI) richiede decisioni architetturali separate
+- `--no-follow-symlinks` flag declared but not implemented in walk logic (TODO — deferred post-v1.1)
+- v2.0 (Web UI) requires separate architectural decisions — deferred
+- **FIXED in v1.1**: v1.0 directory comparison by relative path → now hash-based
 
 ---
 
