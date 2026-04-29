@@ -14,9 +14,9 @@ NEVER: leave this file reflecting a state older than the last session.
 -->
 
 > **Last updated**: 2026-04-29
-> **Current version**: v1.1.0 (Steps v1.1-1 → v1.1-5 complete — v1.1 ready for release)
-> **Next version**: v2.0.0 — Embedded Web UI (future)
-> **Active branch**: `dev` — ready to merge to `main`
+> **Current version**: v1.1.0 — **RELEASED** (published on GitHub Releases)
+> **Next version**: v2.0.0 — Embedded Web UI (deferred — no timeline)
+> **Active branch**: `dev`
 
 ---
 
@@ -38,7 +38,7 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 | 8 | Polish: colored output, `.fmatchignore.example`, README | ✅ |
 | 9 | Release: `.goreleaser.yaml`, cross-platform build | ✅ |
 
-**v1.1 — Directory comparison redesign (next)**
+**v1.1 — Directory comparison redesign (complete ✅)**
 
 | Step | Description | Status |
 |------|-------------|--------|
@@ -58,34 +58,39 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 
 ## Last Completed
 
-**Step v1.1 — Directory comparison redesign ✅**
-- `internal/hash`: nuovo package `FileHash` (SHA-256, TDD)
-- `internal/comparator/dir.go`: rewrite hash-based (`CompareDir` + `FindDuplicates` + `hashDir`)
-- `internal/output/formatter.go`: `FormatDirCompare` + `FormatDuplicates`; `fileHash` → `hash.FileHash`
-- `cmd/root.go`: `RangeArgs(1,2)`, routing 1-arg (single-dir) vs 2-arg
+**v1.1 — Directory comparison redesign ✅**
+- `internal/hash`: new package `FileHash` (SHA-256, TDD — 5 tests)
+- `internal/comparator/dir.go`: full hash-based rewrite (`CompareDir` + `FindDuplicates` + `hashDir`)
+- `internal/output/formatter.go`: `FormatDirCompare` + `FormatDuplicates`; `fileHash` moved to `hash.FileHash`
+- `cmd/root.go`: `RangeArgs(1,2)`, routing 1-arg (single-dir duplicate detection) vs 2-arg
 - Open-source artifacts: `CHANGELOG.md`, `CONTRIBUTING.md`, `.github/workflows/ci.yml`
-- `README.md` aggiornato; fix licenza MIT → GPL v3
-- Suite completa (`go test -race ./...`): 50+ test passati, tutti i package ✅
+- `README.md` updated; license corrected MIT → GPL v3
+- Full test suite (`go test -race ./...`): all packages green ✅
+- Module path migrated from `github.com/mlabate/fmatch` to `github.com/kameleon-consulting/fmatch`
+- Goreleaser moved to Docker execution (`goreleaser/goreleaser:latest`); `.env` support added
+- `v1.1.0` tagged on `main` HEAD and published via `make release` (GoReleaser → GitHub Releases)
 
 ---
 
 ## In Progress
 
-*Nessun task attivo — v0.1.0 rilasciata.*
+*No active task — v1.1.0 released.*
 
 ---
 
 ## Next Step
 
-**v1.1-5g — Merge `dev` → `main`, tag `v1.1.0`, `make release`** (ultimo step — da eseguire ora).
+No next step planned. v1.1.0 is released. Options for future work (not yet decided):
+- Implement `--no-follow-symlinks` (flag declared but not functional in walk logic)
+- Plan v2.0 (Embedded Web UI) — requires separate architectural decisions
 
 ---
 
 ## Open Points
 
-- `--no-follow-symlinks` flag declared but not implemented in walk logic (TODO — deferred post-v1.1)
+- `--no-follow-symlinks` flag declared but not implemented in walk logic (deferred post-v1.1)
 - v2.0 (Web UI) requires separate architectural decisions — deferred
-- **FIXED in v1.1**: v1.0 directory comparison by relative path → now hash-based
+- **FIXED in v1.1**: v1.0 directory comparison was path-based → now hash-based (SHA-256)
 
 ---
 
@@ -94,7 +99,10 @@ Reference: `docs/IMPLEMENTATION_PLAN.md`
 - Binary name: `fmatch`
 - Go module path: `github.com/kameleon-consulting/fmatch`
 - GitHub remote: `git@github.com:kameleon-consulting/fmatch.git`
+- GitHub Releases: `https://github.com/kameleon-consulting/fmatch/releases`
 - License: GPL v3
 - Go version: 1.24
-- All documentation and code: English only
+- All documentation and code comments: English only
 - Working branch: `dev` — merge to `main` only when step is approved and working
+- Release process: `make release` (GoReleaser via Docker) — requires `GITHUB_TOKEN` in `.env`
+- Dev environment: Docker (`fmatch-dev` image) — `docker build -t fmatch-dev .`
