@@ -8,6 +8,11 @@ BUILD_DIR   := dist
 GO          := go
 GOFLAGS     :=
 
+# Load .env if present — keeps secrets out of shell history (never commit .env)
+-include .env
+export GITHUB_TOKEN
+
+
 # Build info injected at link time
 VERSION     := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 LDFLAGS     := -ldflags "-X $(MODULE)/cmd.Version=$(VERSION) -s -w"
