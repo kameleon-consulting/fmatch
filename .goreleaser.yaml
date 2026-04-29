@@ -56,7 +56,7 @@ changelog:
 
 release:
   github:
-    owner: mlabate
+    owner: kameleon-consulting
     name: fmatch
   draft: false
   prerelease: auto
