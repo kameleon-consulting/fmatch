@@ -4,90 +4,131 @@ import (
 	"io/fs"
 	"path/filepath"
 	"sort"
+	"strings"
 
+	"github.com/mlabate/fmatch/internal/hash"
 	"github.com/mlabate/fmatch/internal/ignore"
 )
 
-// DirOptions controls directory comparison behaviour.
+// DirOptions controls directory traversal behaviour.
 type DirOptions struct {
 	Matcher *ignore.Matcher // patterns to ignore (never nil; use LoadPatterns(nil) for empty)
 	Depth   int             // max traversal depth; -1 = unlimited; 0 = root files only
 }
 
-// DirResult holds the aggregated outcome of a directory comparison.
-type DirResult struct {
-	Identical bool     // true only if OnlyInA, OnlyInB and Different are all empty
-	TotalA    int      // total files scanned in A (after ignore)
-	TotalB    int      // total files scanned in B (after ignore)
-	OnlyInA   []string // relative paths present only in A
-	OnlyInB   []string // relative paths present only in B
-	Different []string // relative paths present in both but with different content
-	Common    []string // relative paths present in both and identical
+// HashGroup groups files that share the same SHA-256 hash.
+// Used for both two-directory comparison and single-directory duplicate detection.
+type HashGroup struct {
+	Hash string   // SHA-256 hex (64 chars)
+	InA  []string // relative paths in A with this hash (nil in DuplicateResult.Groups)
+	InB  []string // relative paths in B with this hash (nil in DuplicateResult.Groups)
 }
 
-// CompareDir recursively compares two directories and returns an aggregated DirResult.
+// DirCompareResult is the result of a hash-based two-directory comparison.
+type DirCompareResult struct {
+	Identical bool        // true only if OnlyInA and OnlyInB are both empty
+	Matched   []HashGroup // hashes present in both dirs; each entry lists all matching paths on each side
+	OnlyInA   []HashGroup // hashes present only in A (no file with that content exists in B)
+	OnlyInB   []HashGroup // hashes present only in B (no file with that content exists in A)
+}
+
+// DuplicateResult is the result of duplicate detection within a single directory.
+type DuplicateResult struct {
+	HasDuplicates bool
+	Groups        []HashGroup // groups of 2+ files sharing the same hash (InA used; InB always nil)
+	Unique        []string    // relative paths of files with a unique hash
+}
+
+// CompareDir compares two directories by matching files on SHA-256 hash.
+// Files with identical content are matched regardless of their name or location.
 // Returns an error if either root path cannot be walked.
-func CompareDir(pathA, pathB string, opts DirOptions) (DirResult, error) {
-	filesA, err := walkDir(pathA, opts)
+func CompareDir(pathA, pathB string, opts DirOptions) (DirCompareResult, error) {
+	mapA, err := hashDir(pathA, opts)
 	if err != nil {
-		return DirResult{}, err
+		return DirCompareResult{}, err
 	}
-	filesB, err := walkDir(pathB, opts)
+	mapB, err := hashDir(pathB, opts)
 	if err != nil {
-		return DirResult{}, err
+		return DirCompareResult{}, err
 	}
 
-	var result DirResult
-	result.TotalA = len(filesA)
-	result.TotalB = len(filesB)
+	var result DirCompareResult
 
-	// Set difference using sorted keys.
-	for rel := range filesA {
-		if _, inB := filesB[rel]; !inB {
-			result.OnlyInA = append(result.OnlyInA, rel)
-		}
-	}
-	for rel := range filesB {
-		if _, inA := filesA[rel]; !inA {
-			result.OnlyInB = append(result.OnlyInB, rel)
-		}
-	}
-
-	// Compare files present in both directories.
-	for rel, absA := range filesA {
-		absB, inB := filesB[rel]
-		if !inB {
-			continue
-		}
-		fileResult, err := CompareFiles(absA, absB)
-		if err != nil {
-			// Treat unreadable files as different.
-			result.Different = append(result.Different, rel)
-			continue
-		}
-		if fileResult.Identical {
-			result.Common = append(result.Common, rel)
+	for h, pathsA := range mapA {
+		if pathsB, inB := mapB[h]; inB {
+			result.Matched = append(result.Matched, HashGroup{
+				Hash: h,
+				InA:  sortedCopy(pathsA),
+				InB:  sortedCopy(pathsB),
+			})
 		} else {
-			result.Different = append(result.Different, rel)
+			result.OnlyInA = append(result.OnlyInA, HashGroup{
+				Hash: h,
+				InA:  sortedCopy(pathsA),
+			})
 		}
 	}
 
-	sort.Strings(result.OnlyInA)
-	sort.Strings(result.OnlyInB)
-	sort.Strings(result.Different)
-	sort.Strings(result.Common)
+	for h, pathsB := range mapB {
+		if _, inA := mapA[h]; !inA {
+			result.OnlyInB = append(result.OnlyInB, HashGroup{
+				Hash: h,
+				InB:  sortedCopy(pathsB),
+			})
+		}
+	}
 
-	result.Identical = len(result.OnlyInA) == 0 &&
-		len(result.OnlyInB) == 0 &&
-		len(result.Different) == 0
+	sortHashGroups(result.Matched)
+	sortHashGroups(result.OnlyInA)
+	sortHashGroups(result.OnlyInB)
+
+	result.Identical = len(result.OnlyInA) == 0 && len(result.OnlyInB) == 0
 
 	return result, nil
 }
 
-// walkDir returns a map of relative_path → absolute_path for all files under root,
-// respecting depth limit and ignore patterns.
-func walkDir(root string, opts DirOptions) (map[string]string, error) {
-	files := make(map[string]string)
+// FindDuplicates finds files with identical content within a single directory.
+// Files sharing a hash are grouped together; files with a unique hash go to Unique.
+// Returns an error if the directory cannot be walked.
+func FindDuplicates(path string, opts DirOptions) (DuplicateResult, error) {
+	hashMap, err := hashDir(path, opts)
+	if err != nil {
+		return DuplicateResult{}, err
+	}
+
+	var result DuplicateResult
+
+	for h, paths := range hashMap {
+		sorted := sortedCopy(paths)
+		if len(sorted) >= 2 {
+			result.Groups = append(result.Groups, HashGroup{
+				Hash: h,
+				InA:  sorted,
+			})
+		} else {
+			result.Unique = append(result.Unique, sorted[0])
+		}
+	}
+
+	sortHashGroups(result.Groups)
+	sort.Strings(result.Unique)
+
+	result.HasDuplicates = len(result.Groups) > 0
+
+	return result, nil
+}
+
+// hashDir scans root and returns a map of SHA-256 hash → []relPath.
+// It is the shared primitive for both CompareDir and FindDuplicates.
+//
+// Depth semantics: depth is the number of path separators in the relative path.
+//
+//	"file.txt"     → depth 0  (root file)
+//	"sub/file.txt" → depth 1  (one level deep)
+//
+// With Depth=0 only root files are included; with Depth=-1 there is no limit.
+func hashDir(root string, opts DirOptions) (map[string][]string, error) {
+	result := make(map[string][]string)
 
 	err := filepath.WalkDir(root, func(abs string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -99,22 +140,25 @@ func walkDir(root string, opts DirOptions) (map[string]string, error) {
 			return relErr
 		}
 
-		// Skip the root itself.
+		// Skip the root entry itself.
 		if rel == "." {
 			return nil
 		}
 
-		// Enforce depth limit.
+		// Depth is the number of path separators in the relative path.
+		depth := strings.Count(rel, string(filepath.Separator))
+
 		if opts.Depth >= 0 {
-			depth := len(filepath.SplitList(filepath.ToSlash(rel)))
-			// filepath.SplitList splits on os.PathListSeparator, not path separator.
-			// Use a manual depth count instead.
-			depth = depthOf(rel)
-			if depth > opts.Depth {
-				if d.IsDir() {
+			if d.IsDir() {
+				// A directory at depth d only contains files at depth d+1.
+				// If d >= Depth, those files would exceed the limit: skip the dir entirely.
+				if depth >= opts.Depth {
 					return filepath.SkipDir
 				}
-				return nil
+			} else {
+				if depth > opts.Depth {
+					return nil
+				}
 			}
 		}
 
@@ -126,33 +170,32 @@ func walkDir(root string, opts DirOptions) (map[string]string, error) {
 			return nil
 		}
 
-		// Record files only (not directories themselves).
+		// Compute SHA-256 for regular files only.
 		if !d.IsDir() {
-			files[rel] = abs
+			h, err := hash.FileHash(abs)
+			if err != nil {
+				return err
+			}
+			result[h] = append(result[h], rel)
 		}
 
 		return nil
 	})
 
-	return files, err
+	return result, err
 }
 
-// depthOf returns the depth of a relative path (number of path segments).
-// "file.txt" → 1, "sub/file.txt" → 2, "a/b/c.txt" → 3.
-func depthOf(rel string) int {
-	count := 0
-	for _, part := range filepath.SplitList(filepath.Clean(rel)) {
-		if part != "" {
-			count++
-		}
-	}
-	// filepath.SplitList splits on os.PathListSeparator (':' on Unix).
-	// We need to split on the path separator instead.
-	count = 1
-	for _, c := range rel {
-		if c == filepath.Separator {
-			count++
-		}
-	}
-	return count
+// sortedCopy returns a sorted copy of ss.
+func sortedCopy(ss []string) []string {
+	cp := make([]string, len(ss))
+	copy(cp, ss)
+	sort.Strings(cp)
+	return cp
+}
+
+// sortHashGroups sorts a slice of HashGroup by Hash for deterministic output.
+func sortHashGroups(groups []HashGroup) {
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].Hash < groups[j].Hash
+	})
 }
